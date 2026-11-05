@@ -1,20 +1,22 @@
-const { test } = require('node:test')
-const assert = require('node:assert/strict')
-const fs = require('node:fs')
-const path = require('node:path')
-const vm = require('node:vm')
-const ts = require('typescript')
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import vm from 'node:vm'
+import ts from 'typescript'
+import { createRequire } from 'node:module'
+const nodeRequire = createRequire(import.meta.url)
 const cache = new Map()
 function load(file) {
   file = path.resolve(file)
   if (cache.has(file)) return cache.get(file)
-  const module = { exports: {} }
-  cache.set(file, module.exports)
+  const loaded = { exports: {} }
+  cache.set(file, loaded.exports)
   const source = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2017, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
-  const localRequire = id => id.startsWith('.') ? load(path.resolve(path.dirname(file), id + '.ts')) : require(id)
-  vm.runInNewContext(source, { module, exports: module.exports, require: localRequire, structuredClone, Date, Set }, { filename: file })
-  cache.set(file, module.exports)
-  return module.exports
+  const localRequire = id => id.startsWith('.') ? load(path.resolve(path.dirname(file), id + '.ts')) : nodeRequire(id)
+  vm.runInNewContext(source, { module: loaded, exports: loaded.exports, require: localRequire, structuredClone, Date, Set }, { filename: file })
+  cache.set(file, loaded.exports)
+  return loaded.exports
 }
 const { initialState } = load('src/lib/dashboard/initial-data.ts')
 const { applyAction } = load('src/lib/dashboard/operations.ts')
