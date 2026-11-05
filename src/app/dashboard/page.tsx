@@ -1,5 +1,6 @@
 "use client"
 
+import { DashboardShell } from "@/components/dashboard/DashboardShell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TasksTable } from "@/components/TaskTable"
@@ -10,8 +11,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
-      <div className="max-w-7xl mx-auto">
+    <DashboardShell>
+      <div className="w-full">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-slate-900 mb-2">
@@ -27,7 +28,7 @@ export default function DashboardPage() {
 
         {/* Tabs Navigation */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
+          <TabsList className="mb-3 h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border bg-card p-1.5 shadow-xs [&>button]:min-h-10 [&>button]:shrink-0 [&>button]:px-4 [&>button]:data-[state=active]:bg-primary [&>button]:data-[state=active]:text-primary-foreground">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="projects">Proyectos</TabsTrigger>
             <TabsTrigger value="team">Equipo</TabsTrigger>
@@ -373,6 +374,6 @@ export default function DashboardPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </DashboardShell>
   )
 }

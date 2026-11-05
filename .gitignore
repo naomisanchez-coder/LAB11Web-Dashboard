@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local credentials and temporary artifacts
+*.key
+*.p12
+credentials*.json
+*.tmp
+*.log
