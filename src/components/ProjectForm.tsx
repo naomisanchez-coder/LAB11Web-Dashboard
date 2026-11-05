@@ -1,144 +1,39 @@
 "use client"
-
 import { useState } from "react"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
+import { Checkbox } from "@/components/ui/checkbox"
+import { categories, priorities, type Category, type Priority, type Project } from "@/lib/dashboard/model"
+import { applyAction } from "@/lib/dashboard/operations"
+import { useDashboard } from "./dashboard/DashboardProvider"
+import { Choice, FormError, SaveButton } from "./dashboard/FormControls"
+const empty = () => ({ name: "", description: "", category: "", priority: "", memberIds: [] as string[] })
 export function ProjectForm() {
-  const [open, setOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    priority: "",
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    
-    // Limpiar y cerrar
-    setFormData({ name: "", description: "", category: "", priority: "" })
-    setOpen(false)
+  const { state, run, busy } = useDashboard()
+  const [open, setOpen] = useState(false), [error, setError] = useState("")
+  const [formData, setFormData] = useState(empty)
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault(); if (busy) return
+    const project: Project = { ...formData, id: crypto.randomUUID(), category: formData.category as Category, priority: formData.priority as Priority, status: "Planificado", progress: 0 }
+    const action = { type: "project/create" as const, project }
+    const invalid = applyAction(state, action).error
+    if (invalid) { setError(invalid); return }
+    const failure = await run(action, `Proyecto «${project.name.trim()}» creado.`)
+    if (failure) setError(failure)
+    else { setFormData(empty()); setError(""); setOpen(false) }
   }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mr-2 h-4 w-4"
-          >
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-          </svg>
-          Nuevo Proyecto
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Crear Nuevo Proyecto</DialogTitle>
-            <DialogDescription>
-              Completa la información del proyecto. Click en guardar cuando termines.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">
-                Nombre del Proyecto <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="name"
-                placeholder="Mi Proyecto Increíble"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Input
-                id="description"
-                placeholder="Breve descripción del proyecto..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="category">
-                Categoría <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="web">Desarrollo Web</SelectItem>
-                  <SelectItem value="mobile">Desarrollo Mobile</SelectItem>
-                  <SelectItem value="design">Diseño</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="other">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="priority">
-                Prioridad <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) => setFormData({ ...formData, priority: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona la prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Baja</SelectItem>
-                  <SelectItem value="medium">Media</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">Crear Proyecto</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
+  return <Dialog open={open} onOpenChange={v => { if (!busy) { setOpen(v); setError("") } }}>
+    <DialogTrigger asChild><Button><Plus aria-hidden="true" className="size-4" />Nuevo Proyecto</Button></DialogTrigger>
+    <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl"><DialogHeader><DialogTitle>Crear Nuevo Proyecto</DialogTitle><DialogDescription>Define el proyecto y selecciona a tu equipo.</DialogDescription></DialogHeader>
+      <form onSubmit={handleSubmit} noValidate className="space-y-4"><fieldset disabled={busy} className="space-y-4">
+        <div className="space-y-2"><Label htmlFor="project-name">Nombre del proyecto *</Label><Input id="project-name" autoComplete="off" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+        <div className="space-y-2"><Label htmlFor="project-description">Descripción *</Label><Input id="project-description" required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
+        <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="project-category">Categoría *</Label><Choice id="project-category" label="Selecciona una categoría" value={formData.category} options={Object.entries(categories).map(([value, label]) => ({ value, label }))} onChange={category => setFormData({ ...formData, category })} /></div><div className="space-y-2"><Label htmlFor="project-priority">Prioridad *</Label><Choice id="project-priority" label="Selecciona prioridad" value={formData.priority} options={priorities.map(value => ({ value, label: value }))} onChange={priority => setFormData({ ...formData, priority })} /></div></div>
+        <fieldset className="space-y-3 rounded-lg border p-4"><legend className="px-1 text-sm font-medium">Miembros del equipo ({formData.memberIds.length})</legend>{state.members.length ? state.members.map(m => <label key={m.userId} className="flex cursor-pointer items-center gap-3 text-sm"><Checkbox checked={formData.memberIds.includes(m.userId)} onCheckedChange={checked => setFormData({ ...formData, memberIds: checked === true ? [...new Set([...formData.memberIds, m.userId])] : formData.memberIds.filter(id => id !== m.userId) })} />{m.name}<span className="text-xs text-muted-foreground">{m.isActive ? m.role : "Inactivo"}</span></label>) : <p className="text-sm text-muted-foreground">Puedes crear el proyecto sin miembros y asignarlos desde Equipo.</p>}</fieldset>
+      </fieldset><FormError error={error} /><DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={() => setOpen(false)}>Cancelar</Button><SaveButton busy={busy}>Crear Proyecto</SaveButton></DialogFooter></form>
+    </DialogContent>
+  </Dialog>
 }
