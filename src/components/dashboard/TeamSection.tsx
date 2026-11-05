@@ -1,14 +1,112 @@
-"use client"
-import { useState } from "react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
-import { useDashboard } from "./DashboardProvider"
-import { MemberForm } from "./MemberForm"
-import { ConfirmDelete } from "./ConfirmDelete"
-import { FormError } from "./FormControls"
+"use client";
+import { useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { useDashboard } from "./DashboardProvider";
+import { MemberForm } from "./MemberForm";
+import { ConfirmDelete } from "./ConfirmDelete";
+import { FormError } from "./FormControls";
 export function TeamSection() {
-  const { state, busy, run } = useDashboard(); const [error, setError] = useState("")
-  return <section aria-labelledby="team-title" className="space-y-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 id="team-title" className="text-xl font-semibold">Nuestro equipo</h2><p className="text-sm text-muted-foreground">{state.members.length} integrantes · Roles y responsabilidades</p></div><MemberForm /></div><FormError error={error} />{!state.members.length ? <p className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">Aún no hay integrantes. Registra al primero para comenzar.</p> : <div className="grid gap-4 lg:grid-cols-2">{state.members.map(m => <Card key={m.userId} className="shadow-xs"><CardContent className="space-y-4"><div className="flex gap-3"><Avatar className="size-11"><AvatarFallback className="bg-secondary font-semibold text-primary">{m.name.split(" ").map(n => n[0]).slice(0, 2).join("")}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><h3 className="font-semibold">{m.name}</h3><p className="text-sm text-muted-foreground">{m.role} · {m.position}</p><p className="break-all text-sm text-muted-foreground">{m.email}</p></div><Badge variant={m.isActive ? "default" : "secondary"}>{m.isActive ? "Activo" : "Inactivo"}</Badge></div><div className="grid gap-1 text-xs text-muted-foreground"><p>Proyecto principal: {state.projects.find(p => p.id === m.projectId)?.name ?? "Sin asignación"}</p><p>Nacimiento: {m.birthdate || "Sin completar"} · Teléfono: {m.phone || "Sin completar"}</p><p>Participa en {state.projects.filter(p => p.memberIds.includes(m.userId)).length} proyectos</p></div><div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3"><label className="flex items-center gap-2 text-sm"><Switch aria-label={`Estado activo de ${m.name}`} checked={m.isActive} disabled={busy} onCheckedChange={async isActive => { const e = await run({ type: "member/toggle", id: m.userId, isActive }, "Estado del integrante actualizado."); setError(e ?? "") }} />Activo</label><div className="flex gap-2"><MemberForm member={m} /><ConfirmDelete name={m.name} action={{ type: "member/delete", id: m.userId }} consequence="Se quitará al integrante de sus proyectos. Si tiene tareas asignadas, primero deberás reasignarlas o eliminarlas." /></div></div></CardContent></Card>)}</div>}</section>
+  const { state, busy, run } = useDashboard();
+  const [error, setError] = useState("");
+  return (
+    <section aria-labelledby="team-title" className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="team-title" className="text-xl font-semibold">
+            Nuestro equipo
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {state.members.length} integrantes · Roles y responsabilidades
+          </p>
+        </div>
+        <MemberForm />
+      </div>
+      <FormError error={error} />
+      {!state.members.length ? (
+        <p className="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
+          Aún no hay integrantes. Registra al primero para comenzar.
+        </p>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {state.members.map((m) => (
+            <Card key={m.userId} className="shadow-xs">
+              <CardContent className="space-y-4">
+                <div className="flex gap-3">
+                  <Avatar className="size-11">
+                    <AvatarFallback className="bg-secondary font-semibold text-primary">
+                      {m.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold">{m.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {m.role} · {m.position}
+                    </p>
+                    <p className="break-all text-sm text-muted-foreground">
+                      {m.email}
+                    </p>
+                  </div>
+                  <Badge variant={m.isActive ? "default" : "secondary"}>
+                    {m.isActive ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <div className="grid gap-1 text-xs text-muted-foreground">
+                  <p>
+                    Proyecto principal:{" "}
+                    {state.projects.find((p) => p.id === m.projectId)?.name ??
+                      "Sin asignación"}
+                  </p>
+                  <p>
+                    Nacimiento: {m.birthdate || "Sin completar"} · Teléfono:{" "}
+                    {m.phone || "Sin completar"}
+                  </p>
+                  <p>
+                    Participa en{" "}
+                    {
+                      state.projects.filter((p) =>
+                        p.memberIds.includes(m.userId),
+                      ).length
+                    }{" "}
+                    proyectos
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                      aria-label={`Estado activo de ${m.name}`}
+                      checked={m.isActive}
+                      disabled={busy}
+                      onCheckedChange={async (isActive) => {
+                        const e = await run(
+                          { type: "member/toggle", id: m.userId, isActive },
+                          "Estado del integrante actualizado.",
+                        );
+                        setError(e ?? "");
+                      }}
+                    />
+                    Activo
+                  </label>
+                  <div className="flex gap-2">
+                    <MemberForm member={m} />
+                    <ConfirmDelete
+                      name={m.name}
+                      action={{ type: "member/delete", id: m.userId }}
+                      consequence="Se quitará al integrante de sus proyectos. Si tiene tareas asignadas, primero deberás reasignarlas o eliminarlas."
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
