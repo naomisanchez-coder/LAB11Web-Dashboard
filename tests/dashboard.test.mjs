@@ -104,3 +104,32 @@ test('reasignar tareas permite eliminar integrante sin referencias huérfanas', 
   const deleted = applyAction(reassigned.state, { type: 'member/delete', id: 'u1' })
   assert.equal(deleted.error, undefined); assert.ok(deleted.state.tasks.every(t => t.userId !== 'u1'))
 })
+test('guardar configuración valida correo y modifica preferencias sin afectar entidades', () => {
+  const before = initialState(); const settings = { name: 'Naomi', email: 'naomi@example.com', notifications: false, view: 'compact', pageSize: 3 }
+  const result = applyAction(before, { type: 'settings/save', settings })
+  assert.equal(result.error, undefined); assert.equal(result.state.settings.pageSize, 3)
+  assert.equal(result.state.projects, before.projects)
+  assert.equal(paginate(result.state.tasks, 1, result.state.settings.pageSize).records.length, 3)
+  for (const changes of [{ email: 'invalido' }, { pageSize: 0 }, { pageSize: 1000 }, { name: ' ' }, { view: 'unknown' }]) assert.ok(applyAction(before, { type: 'settings/save', settings: { ...settings, ...changes } }).error)
+})
+test('sesión vacía y recarga independiente producen métricas coherentes', () => {
+  const original = initialState(); const empty = { ...original, projects: [], members: [], tasks: [] }
+  for (const value of Object.values(metrics(empty))) assert.equal(value, 0)
+  original.projects.pop(); assert.equal(initialState().projects.length, 6)
+})
+test('secuencias de CRUD conservan toda la integridad referencial', () => {
+  let state = initialState()
+  state = applyAction(state, { type: 'project/create', project: project() }).state
+  state = applyAction(state, { type: 'member/save', member: member({ projectId: 'new-project' }), create: true }).state
+  state = applyAction(state, { type: 'task/save', task: task({ projectId: 'new-project', userId: 'new-user' }), create: true }).state
+  assert.ok(applyAction(state, { type: 'project/delete', id: 'new-project' }).error)
+  assert.ok(applyAction(state, { type: 'member/delete', id: 'new-user' }).error)
+  state = applyAction(state, { type: 'task/delete', id: 'new-task' }).state
+  state = applyAction(state, { type: 'project/delete', id: 'new-project' }).state
+  assert.equal(state.members.find(m => m.userId === 'new-user').projectId, null)
+  for (const t of state.tasks) {
+    assert.ok(state.members.some(m => m.userId === t.userId))
+    assert.ok(state.projects.find(p => p.id === t.projectId)?.memberIds.includes(t.userId))
+  }
+  for (const p of state.projects) assert.ok(p.memberIds.every(id => state.members.some(m => m.userId === id)))
+})

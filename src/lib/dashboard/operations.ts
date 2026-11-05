@@ -60,5 +60,11 @@ export function applyAction(state: DashboardState, action: Action): Result {
       if (!state.tasks.some(t => t.id === action.id)) return fail("La tarea ya no existe.")
       return { state: { ...state, tasks: state.tasks.filter(t => t.id !== action.id) } }
     }
+    case "settings/save": {
+      const settings = action.settings
+      if (!settings.name.trim() || !emailValid(settings.email.trim())) return fail("Ingresa tu nombre y un correo electrónico válido.")
+      if (![3, 5, 10, 20].includes(settings.pageSize) || !["comfortable", "compact"].includes(settings.view)) return fail("Selecciona una visualización y un tamaño de página válidos.")
+      return { state: { ...state, settings: { ...settings, name: settings.name.trim(), email: settings.email.trim() } } }
+    }
   }
 }

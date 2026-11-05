@@ -28,6 +28,7 @@ export type Action =
   | { type: "member/toggle"; id: string; isActive: boolean }
   | { type: "task/save"; task: Task; create: boolean }
   | { type: "task/delete"; id: string }
+  | { type: "settings/save"; settings: Settings }
 export const emailValid = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
 export function validDate(s: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
