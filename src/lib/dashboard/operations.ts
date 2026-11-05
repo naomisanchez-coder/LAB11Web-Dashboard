@@ -1,4 +1,4 @@
-import { emailValid, validDate, localDate, categories, priorities, type Action, type DashboardState } from "./model"
+import { taskStatuses, emailValid, validDate, localDate, categories, priorities, type Action, type DashboardState } from "./model"
 export interface Result { state: DashboardState; error?: string }
 export function applyAction(state: DashboardState, action: Action): Result {
   const fail = (error: string): Result => ({ state, error })
@@ -43,6 +43,22 @@ export function applyAction(state: DashboardState, action: Action): Result {
     case "member/toggle": {
       if (!state.members.some(m => m.userId === action.id)) return fail("El integrante ya no existe.")
       return { state: { ...state, members: state.members.map(m => m.userId === action.id ? { ...m, isActive: action.isActive } : m) } }
+    }
+    case "task/save": {
+      const t = action.task
+      const existing = state.tasks.some(x => x.id === t.id)
+      if (!t.id || (action.create ? existing : !existing)) return fail("La tarea ya existe o no está disponible.")
+      if (!t.title.trim() || !t.description.trim() || !taskStatuses.includes(t.status) || !priorities.includes(t.priority)) return fail("Completa título, descripción, estado y prioridad.")
+      if (!validDate(t.deadline)) return fail("Selecciona una fecha límite válida.")
+      const project = state.projects.find(p => p.id === t.projectId)
+      if (!project) return fail("Selecciona un proyecto existente.")
+      if (!state.members.some(m => m.userId === t.userId) || !project.memberIds.includes(t.userId)) return fail("El responsable debe pertenecer al proyecto seleccionado.")
+      const task = { ...t, title: t.title.trim(), description: t.description.trim() }
+      return { state: { ...state, tasks: action.create ? [...state.tasks, task] : state.tasks.map(x => x.id === t.id ? task : x) } }
+    }
+    case "task/delete": {
+      if (!state.tasks.some(t => t.id === action.id)) return fail("La tarea ya no existe.")
+      return { state: { ...state, tasks: state.tasks.filter(t => t.id !== action.id) } }
     }
   }
 }

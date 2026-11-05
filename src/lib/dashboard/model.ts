@@ -26,6 +26,8 @@ export type Action =
   | { type: "member/save"; member: Member; create: boolean }
   | { type: "member/delete"; id: string }
   | { type: "member/toggle"; id: string; isActive: boolean }
+  | { type: "task/save"; task: Task; create: boolean }
+  | { type: "task/delete"; id: string }
 export const emailValid = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
 export function validDate(s: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
@@ -45,4 +47,11 @@ export function metrics(state: DashboardState) {
     progress: state.tasks.filter(t => t.status === "En progreso").length,
     completed: state.tasks.filter(t => t.status === "Completado").length,
   }
+}
+
+export function paginate<T>(records: T[], requestedPage: number, size: number) {
+  const pageSize = Number.isInteger(size) && size > 0 ? size : 5
+  const totalPages = Math.max(1, Math.ceil(records.length / pageSize))
+  const page = Math.min(totalPages, Math.max(1, Math.trunc(requestedPage) || 1))
+  return { page, totalPages, pageSize, records: records.slice((page - 1) * pageSize, page * pageSize) }
 }

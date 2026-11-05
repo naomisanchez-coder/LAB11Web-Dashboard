@@ -72,3 +72,35 @@ test('no se elimina integrante con tareas; traslado principal conserva membresí
   assert.ok(updated.state.projects.find(p => p.id === 'p1').memberIds.includes('u1'))
   assert.ok(updated.state.projects.find(p => p.id === 'p3').memberIds.includes('u1'))
 })
+const { paginate } = load('src/lib/dashboard/model.ts')
+function task(overrides = {}) { return { id: 'new-task', title: 'Nueva tarea', description: 'Descripción detallada', projectId: 'p1', status: 'Pendiente', priority: 'Alta', userId: 'u1', deadline: '2026-12-15', ...overrides } }
+test('CRUD tareas conserva identificadores, actualiza métricas y libera restricciones', () => {
+  const before = initialState(); const created = applyAction(before, { type: 'task/save', task: task(), create: true })
+  assert.equal(created.error, undefined); assert.equal(metrics(created.state).tasks, 6)
+  assert.equal(paginate(created.state.tasks, 2, 5).records.length, 1)
+  const edited = applyAction(created.state, { type: 'task/save', task: task({ status: 'Completado' }), create: false })
+  assert.equal(edited.error, undefined); assert.equal(metrics(edited.state).completed, 2)
+  const deleted = applyAction(edited.state, { type: 'task/delete', id: 'new-task' })
+  assert.equal(deleted.error, undefined); assert.equal(deleted.state.tasks.length, 5)
+  assert.equal(paginate(deleted.state.tasks, 2, 5).page, 1)
+})
+test('tareas rechazan campos vacíos, fecha inválida y responsable ajeno al proyecto', () => {
+  for (const changes of [{ title: '' }, { description: '' }, { deadline: '2026-02-30' }, { projectId: 'missing' }, { userId: 'u4' }, { userId: 'missing' }, { priority: 'Inventada' }]) {
+    const before = initialState(); const result = applyAction(before, { type: 'task/save', task: task(changes), create: true })
+    assert.ok(result.error); assert.equal(result.state, before)
+  }
+})
+test('paginación limita los extremos, soporta vacío y cambio de tamaño', () => {
+  const list = Array.from({ length: 13 }, (_, i) => i)
+  assert.equal(paginate(list, 99, 5).page, 3); assert.equal(paginate(list, -1, 5).page, 1)
+  assert.equal(paginate(list, 2, 10).records.length, 3)
+  assert.equal(paginate([], 9, 5).records.length, 0); assert.equal(paginate([], 9, 5).page, 1)
+  assert.equal(paginate(list, 1, 0).pageSize, 5)
+})
+test('reasignar tareas permite eliminar integrante sin referencias huérfanas', () => {
+  const before = initialState(); const first = before.tasks[0]
+  const reassigned = applyAction(before, { type: 'task/save', task: { ...first, userId: 'u2' }, create: false })
+  assert.equal(reassigned.error, undefined)
+  const deleted = applyAction(reassigned.state, { type: 'member/delete', id: 'u1' })
+  assert.equal(deleted.error, undefined); assert.ok(deleted.state.tasks.every(t => t.userId !== 'u1'))
+})
