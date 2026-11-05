@@ -1,14 +1,13 @@
 "use client"
 
 import { DashboardProvider } from "@/components/dashboard/DashboardProvider"
+import { TeamSection } from "@/components/dashboard/TeamSection"
 import { ProjectsSection } from "@/components/dashboard/ProjectsSection"
 import { DashboardShell } from "@/components/dashboard/DashboardShell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TasksTable } from "@/components/TaskTable"
 import { ProjectForm } from "@/components/ProjectForm"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function DashboardPage() {
@@ -193,49 +192,7 @@ export default function DashboardPage() {
 
           <TabsContent value="projects"><ProjectsSection /></TabsContent>
 
-          {/* Tab: Team */}
-          <TabsContent value="team" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Miembros del Equipo</CardTitle>
-                <CardDescription>
-                  Gestiona los miembros de tu equipo y sus roles
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: "María García", role: "Frontend Developer", email: "maria@example.com", status: "Activo" },
-                    { name: "Juan Pérez", role: "Backend Developer", email: "juan@example.com", status: "Activo" },
-                    { name: "Ana López", role: "UI/UX Designer", email: "ana@example.com", status: "Ausente" },
-                    { name: "Carlos Ruiz", role: "DevOps Engineer", email: "carlos@example.com", status: "Activo" },
-                    { name: "Laura Martínez", role: "Project Manager", email: "laura@example.com", status: "Activo" },
-                  ].map((member, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <Avatar>
-                          <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{member.name}</p>
-                          <p className="text-sm text-muted-foreground">{member.role}</p>
-                          <p className="text-xs text-muted-foreground">{member.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={member.status === "Activo" ? "default" : "secondary"}>
-                          {member.status}
-                        </Badge>
-                        <Button size="sm" variant="outline">
-                          Editar
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <TabsContent value="team"><TeamSection /></TabsContent>
 
           {/* Tab: Settings */}
           <TabsContent value="settings">

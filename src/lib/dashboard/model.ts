@@ -23,6 +23,9 @@ export interface DashboardState { projects: Project[]; members: Member[]; tasks:
 export type Action =
   | { type: "project/create"; project: Project }
   | { type: "project/delete"; id: string }
+  | { type: "member/save"; member: Member; create: boolean }
+  | { type: "member/delete"; id: string }
+  | { type: "member/toggle"; id: string; isActive: boolean }
 export const emailValid = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
 export function validDate(s: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false

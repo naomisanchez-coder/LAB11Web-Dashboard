@@ -46,3 +46,29 @@ test('eliminar proyecto con tareas se bloquea; eliminación válida libera refer
   assert.equal(after.error, undefined); assert.equal(after.state.projects.length, 6)
   assert.equal(before.projects.length, 6)
 })
+function member(overrides = {}) { return { userId: 'new-user', name: 'Integrante nuevo', email: 'nuevo@example.com', role: 'Developer', position: 'Frontend', birthdate: '2000-02-29', phone: '+51 999 123 456', projectId: 'p3', isActive: true, ...overrides } }
+test('CRUD de integrantes conserva identificadores, relaciones y métricas', () => {
+  const before = initialState(); const saved = applyAction(before, { type: 'member/save', member: member(), create: true })
+  assert.equal(saved.error, undefined); assert.equal(saved.state.members.length, 6)
+  assert.ok(saved.state.projects.find(p => p.id === 'p3').memberIds.includes('new-user'))
+  const edited = applyAction(saved.state, { type: 'member/save', member: member({ name: 'Nombre editado', projectId: 'p5' }), create: false })
+  assert.equal(edited.error, undefined); assert.equal(edited.state.members.at(-1).userId, 'new-user')
+  assert.ok(!edited.state.projects.find(p => p.id === 'p3').memberIds.includes('new-user'))
+  const inactive = applyAction(edited.state, { type: 'member/toggle', id: 'new-user', isActive: false }).state
+  assert.equal(metrics(inactive).activeMembers, 4)
+  const deleted = applyAction(inactive, { type: 'member/delete', id: 'new-user' })
+  assert.equal(deleted.error, undefined); assert.equal(deleted.state.members.length, 5)
+  assert.ok(deleted.state.projects.every(p => !p.memberIds.includes('new-user')))
+})
+test('integrantes rechazan correo duplicado, fechas imposibles, teléfono inválido y proyecto inexistente', () => {
+  for (const changes of [{ email: 'maria@example.com' }, { email: 'incorrecto' }, { birthdate: '2025-02-30' }, { birthdate: '2100-01-01' }, { phone: 'abc' }, { projectId: 'missing' }]) {
+    assert.ok(applyAction(initialState(), { type: 'member/save', member: member(changes), create: true }).error)
+  }
+})
+test('no se elimina integrante con tareas; traslado principal conserva membresía necesaria', () => {
+  const before = initialState(); assert.ok(applyAction(before, { type: 'member/delete', id: 'u1' }).error)
+  const updated = applyAction(before, { type: 'member/save', member: member({ ...before.members[0], projectId: 'p3', birthdate: '2000-01-01', phone: '999123456' }), create: false })
+  assert.equal(updated.error, undefined)
+  assert.ok(updated.state.projects.find(p => p.id === 'p1').memberIds.includes('u1'))
+  assert.ok(updated.state.projects.find(p => p.id === 'p3').memberIds.includes('u1'))
+})
